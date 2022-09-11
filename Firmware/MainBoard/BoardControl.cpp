@@ -1,7 +1,6 @@
+#include "BoardControl.h"
+
 #include <Arduino.h>
-#include <HardwareSerial.h>
-#include <LiquidCrystal_I2C.h>
-#include <Wire.h>
 
 const int PARALLEL_OUT = PB13;
 const int SERIES_OUT = PB12;
@@ -10,29 +9,30 @@ const int CHANNEL_B_EN = PB15;
 const int V_TEMP_A = PA0;
 const int V_TEMP_B = PA1;
 const int FAN_CTRL = PC6;
+const int I2C_SDA = PB7;
+const int I2C_SCL = PB6;
 
-enum Command {
-    NO_COMMAND,
-    CMD_SET_INDEPENDENT,
-    CMD_SET_PARALLEL,
-    CMD_SET_SERIES
-};
-
-enum OutputMode {
-    MODE_INDEPENDENT,
-    MODE_PARALLEL,
-    MODE_SERIES
-};
-
-LiquidCrystal_I2C lcd(0x27,20,4);  // set the LCD address to 0x27 for a 16 chars and 2 line display
-HardwareSerial mySerial(PA10, PA9);
-
-int count = 2;
 bool fanRunning = false;
 int fanDelay = 0;
 
-void initPins()
+BoardControl::BoardControl() :
+    mySerial(PA10, PA9),
+    adc(mySerial),
+    lcd(0x27, 20, 4) // set the LCD address to 0x27 for a 20 chars and 4 line display
 {
+}
+
+void BoardControl::begin()
+{
+    Wire.setSCL(I2C_SCL);
+    Wire.setSDA(I2C_SDA);
+
+    mySerial.begin(115200);
+    mySerial.println("Board Control Firmware");
+
+    Wire.begin();
+    lcd.begin();
+
     pinMode(CHANNEL_B_EN, OUTPUT);
     pinMode(PARALLEL_OUT, OUTPUT);
     pinMode(SERIES_OUT, OUTPUT);
@@ -43,20 +43,19 @@ void initPins()
     digitalWrite(SERIES_OUT, LOW);
     digitalWrite(FAN_CTRL, LOW);
 
-    lcd.begin();
+    adc.begin();
+
     // Print a message to the LCD.
     lcd.backlight();
-    lcd.setCursor(3,0);
-    lcd.print("Hello, world!");
-    delay(1000);
+    lcd.setCursor(0,1);
+    lcd.print("La Font del Gat v1.0");
+    lcd.setCursor(1,2);
+    lcd.print("(c) Pau Estalella");
+    delay(3000);
     lcd.clear();
-
-    mySerial.begin(115200);
-    mySerial.println ("Hello!");
-
 }
 
-void checkFan()
+void BoardControl::checkFan()
 {
     String msgLine;
     char tempMsgLine[20];
@@ -87,7 +86,7 @@ void checkFan()
     }
 }
 
-Command readSerialCommand()
+BoardControl::Command BoardControl::readSerialCommand()
 {
     int c  = mySerial.read();
 
@@ -118,9 +117,7 @@ Command readSerialCommand()
     return cmd;
 }
 
-OutputMode outputState;
-
-void changeOutputMode(OutputMode newOutputState)
+void BoardControl::changeOutputMode(OutputMode newOutputState)
 {
     // Disable relays first, short-circuits are dangerous
     digitalWrite(PARALLEL_OUT, LOW);
@@ -140,7 +137,7 @@ void changeOutputMode(OutputMode newOutputState)
     }
 }
 
-void checkCommands()
+void BoardControl::checkCommands()
 {
     Command cmd = readSerialCommand();
     OutputMode newOutputState;
@@ -163,3 +160,33 @@ void checkCommands()
         outputState = newOutputState;
     }
 }
+void BoardControl::updateOutputInfo()
+{
+    String msgLine;
+    char tempMsgLine[20];
+
+   adc.sample();
+
+    msgLine = "vA: " + String(adc.readOutput(Output::VoltageA));
+    msgLine.toCharArray(tempMsgLine, 20);
+    lcd.setCursor(0,1);
+    lcd.print(tempMsgLine);
+
+    msgLine = "vB: " + String(adc.readOutput(Output::VoltageB));
+    msgLine.toCharArray(tempMsgLine, 20);
+    lcd.setCursor(10,1);
+    lcd.print(tempMsgLine);
+
+    msgLine = "iA: " + String(adc.readOutput(Output::CurrentA));
+    msgLine.toCharArray(tempMsgLine, 20);
+    lcd.setCursor(0,2);
+    lcd.print(tempMsgLine);
+
+    msgLine = "iB: " + String(adc.readOutput(Output::CurrentB));
+    msgLine.toCharArray(tempMsgLine, 20);
+    lcd.setCursor(10,2);
+    lcd.print(tempMsgLine);
+    mySerial.println("Output info updated");
+}
+
+
