@@ -1,0 +1,15 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP Relay_SPDT_Panasonic_ALQ105
+D Standex Meder DIP reed relay, SPDT
+K Single Pole Reed Relay SPDT
+F https://standexelectronics.com/wp-content/uploads/datasheet_reed_relay_DIP.pdf
+$ENDCMP
+#
+$CMP Relay_SPST_Panasonic_ALQ305
+D Standex Meder DIP reed relay, SPST, Closing Contact
+K Single Pole Reed Relay SPST
+F https://standexelectronics.com/wp-content/uploads/datasheet_reed_relay_DIP.pdf
+$ENDCMP
+#
+#End Doc Library
