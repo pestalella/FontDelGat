@@ -3523,7 +3523,6 @@
     )
   )
 
-
   (junction (at 109.22 224.79) (diameter 0) (color 0 0 0 0)
     (uuid 0181f367-c738-484d-92b3-e86e6bbf0037)
   )
@@ -10191,10 +10190,10 @@
     (property "Reference" "R27" (id 0) (at 319.2272 196.9516 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
-    (property "Value" "5k" (id 1) (at 319.2272 199.263 0)
+    (property "Value" "" (id 1) (at 319.2272 199.263 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
-    (property "Footprint" "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal" (id 2) (at 318.516 198.374 90)
+    (property "Footprint" "" (id 2) (at 318.516 198.374 90)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "~" (id 3) (at 317.5 198.12 0)
@@ -10977,7 +10976,7 @@
       (reference "R26") (unit 1) (value "10k") (footprint "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder")
     )
     (path "/da3fa43c-fb99-4d3d-85d2-ad3d29a37681"
-      (reference "R27") (unit 1) (value "5k") (footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
+      (reference "R27") (unit 1) (value "100") (footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
     )
     (path "/00000000-0000-0000-0000-00005f1d9035"
       (reference "R28") (unit 1) (value "220") (footprint "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder")
