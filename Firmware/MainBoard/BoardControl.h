@@ -26,6 +26,7 @@ public:
     void checkFan();
     void checkCommands();
     void updateOutputInfo();
+    void updateOutputVoltages();
 
 private:
     Command readSerialCommand();
@@ -33,7 +34,7 @@ private:
 
 private:
     HardwareSerial mySerial;
-    OutputSensor adc;
+    OutputSensor outSense;
     LiquidCrystal_I2C lcd;
 
     OutputMode outputState;

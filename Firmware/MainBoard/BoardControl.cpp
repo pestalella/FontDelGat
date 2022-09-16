@@ -17,7 +17,7 @@ int fanDelay = 0;
 
 BoardControl::BoardControl() :
     mySerial(PA10, PA9),
-    adc(mySerial),
+    outSense(mySerial),
     lcd(0x27, 20, 4) // set the LCD address to 0x27 for a 20 chars and 4 line display
 {
 }
@@ -43,7 +43,7 @@ void BoardControl::begin()
     digitalWrite(SERIES_OUT, LOW);
     digitalWrite(FAN_CTRL, LOW);
 
-    adc.begin();
+    outSense.begin();
 
     // Print a message to the LCD.
     lcd.backlight();
@@ -165,24 +165,24 @@ void BoardControl::updateOutputInfo()
     String msgLine;
     char tempMsgLine[20];
 
-   adc.sample();
+   outSense.sample();
 
-    msgLine = "vA: " + String(adc.readOutput(Output::VoltageA));
+    msgLine = "vA: " + String(outSense.readOutput(Output::VoltageA));
     msgLine.toCharArray(tempMsgLine, 20);
     lcd.setCursor(0,1);
     lcd.print(tempMsgLine);
 
-    msgLine = "vB: " + String(adc.readOutput(Output::VoltageB));
+    msgLine = "vB: " + String(outSense.readOutput(Output::VoltageB));
     msgLine.toCharArray(tempMsgLine, 20);
     lcd.setCursor(10,1);
     lcd.print(tempMsgLine);
 
-    msgLine = "iA: " + String(adc.readOutput(Output::CurrentA));
+    msgLine = "iA: " + String(outSense.readOutput(Output::CurrentA));
     msgLine.toCharArray(tempMsgLine, 20);
     lcd.setCursor(0,2);
     lcd.print(tempMsgLine);
 
-    msgLine = "iB: " + String(adc.readOutput(Output::CurrentB));
+    msgLine = "iB: " + String(outSense.readOutput(Output::CurrentB));
     msgLine.toCharArray(tempMsgLine, 20);
     lcd.setCursor(10,2);
     lcd.print(tempMsgLine);
