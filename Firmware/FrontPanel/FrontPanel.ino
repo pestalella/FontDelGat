@@ -54,22 +54,23 @@ void updateLeds()
     digitalWrite(     CHANNEL_A_EN, (ledStatus & 0x08) != 0);
 }
 
+uint16_t lastStateSent = 0;
 void requestEvent()
 {
     // Serial.println("requestEvent()");
-    char sendBuf[2];
+    uint8_t sendBuf[2];
     switch (receiveBuffer[0]) {
     case 0x01:  // Read keyboard status
-        // Serial.print("[CMD] Read keyboard status. Sending ");
         sendBuf[0] = buttonState & 0xFF;
-        sendBuf[1] = (buttonState & 0xFF00) >> 8;
-        // Serial.println(buttonState, HEX);
+        sendBuf[1] = buttonState >> 8;
+        if (buttonState != lastStateSent) {
+            Serial.print("[CMD] Read keyboard status. Sending ");
+            Serial.println(buttonState, HEX);
+            lastStateSent = buttonState;
+        }
         Wire.write(sendBuf, 2);
         break;
     case 0x02:  // Set LED status
-        Serial.print("[CMD] Set LED status: [");
-        Serial.print(receiveBuffer[1], HEX);
-        Serial.println("]");
         ledStatus = receiveBuffer[1];
         Wire.write(0x00);  // Send OK
         break;
@@ -84,7 +85,7 @@ void requestEvent()
     }
 }
 
-bool readButtonState(int buttonNum)
+uint16_t readButtonState(int buttonNum)
 {
     // Disable while changing the address
     digitalWrite(N_SCAN_EN, 1);
@@ -101,14 +102,13 @@ bool readButtonState(int buttonNum)
 
 void scanKeys()
 {
-    uint16_t oldButtonState = buttonState;
-    buttonState = 0;
+    uint16_t newButtonState = 0;
     for (int i = 0; i < 16; ++i) {
-        buttonState = buttonState | (readButtonState(i) << i);
+        newButtonState = newButtonState | (readButtonState(i) << i);
     }
-    if (buttonState != oldButtonState) {
-        Serial.print("BSTATE:");
+    if (newButtonState != buttonState) {
         Serial.println(buttonState, HEX);
+        buttonState = newButtonState;
     }
 }
 
@@ -147,14 +147,7 @@ int counter = 0;
 void loop()
 {
     scanKeys();
-//    ledStatus = buttonState >> 12;
-//    ledStatus++;
     updateLeds();
-
-    // Wire.beginTransmission(0x12);
-    // byte error = Wire.endTransmission();
-    // Serial.print("Error: ");
-    // Serial.println(error);
 
     // digitalWrite(INDEP_CHANNEL_EN, HIGH);
     // delay(wait);
@@ -174,5 +167,4 @@ void loop()
 
     // Serial.print(counter++);
     // Serial.println(" Hi!");
-//    delay(1000);
 }
