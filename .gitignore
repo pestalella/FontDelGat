@@ -3,3 +3,6 @@ arduino_build/
 gerber/
 *-cache
 *.csv
+*.bak
+.vscode
+*.bck
