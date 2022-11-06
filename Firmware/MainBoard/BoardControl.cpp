@@ -31,7 +31,7 @@ void BoardControl::begin()
     mySerial.println("Board Control Firmware");
 
     Wire.begin();
-    lcd.begin();
+//    lcd.begin();
 
     pinMode(CHANNEL_B_EN, OUTPUT);
     pinMode(PARALLEL_OUT, OUTPUT);
@@ -77,44 +77,13 @@ void BoardControl::checkFan()
     bool shouldFanRun = (tempA > 30 || tempB > 30);
     if (fanDelay == 0) {
         if (shouldFanRun != fanRunning) {
-            fanRunning = shouldFanRun;
+            fanRunning = shouldFanRkun;
             fanDelay = 50;
             digitalWrite(FAN_CTRL, fanRunning);
         }
     } else {
         fanDelay--;
     }
-}
-
-BoardControl::Command BoardControl::readSerialCommand()
-{
-    int c  = mySerial.read();
-
-    Command cmd;
-    switch (c) {
-        case -1:
-            cmd = NO_COMMAND;
-            break;
-        case 'i':
-        case 'I':
-            mySerial.println("Set independent outputs");
-            cmd = CMD_SET_INDEPENDENT;
-            break;
-        case 'p':
-        case 'P':
-            mySerial.println("Set parallel outputs");
-            cmd = CMD_SET_PARALLEL;
-            break;
-        case 's':
-        case 'S':
-            mySerial.println("Set serial outputs");
-            cmd = CMD_SET_SERIES;
-            break;
-        default:
-            cmd = NO_COMMAND;
-            break;
-    }
-    return cmd;
 }
 
 void BoardControl::changeOutputMode(OutputMode newOutputState)
@@ -137,35 +106,94 @@ void BoardControl::changeOutputMode(OutputMode newOutputState)
     }
 }
 
+int buttonState = 0;
+int buttonFlipDelay = 0;
+uint8_t ledStatus = 0;
+
 void BoardControl::checkCommands()
 {
-    Command cmd = readSerialCommand();
-    OutputMode newOutputState;
-    switch (cmd) {
-        case NO_COMMAND:
-            newOutputState = outputState;
-            break;
-        case CMD_SET_INDEPENDENT:
-            newOutputState = MODE_INDEPENDENT;
-            break;
-        case CMD_SET_PARALLEL:
-            newOutputState = MODE_PARALLEL;
-            break;
-        case CMD_SET_SERIES:
-            newOutputState = MODE_SERIES;
-            break;
+//    uint8_t fpResponse[2];
+    uint16_t fpResponse;
+
+    // Request button state
+    Wire.beginTransmission(0x42);
+    int result = Wire.write(0x01);
+    if (result == 0) {
+        mySerial.println("Error writing to I2C. Result=0");
     }
-    if (newOutputState != outputState) {
-        changeOutputMode(newOutputState);
-        outputState = newOutputState;
+    //  * Output   0 .. success
+    //  *          1 .. length to long for buffer
+    //  *          2 .. address send, NACK received
+    //  *          3 .. data send, NACK received
+    //  *          4 .. other twi error (lost bus arbitration, bus error, ..)
+    //  *          5 .. timeout
+    result = Wire.endTransmission();
+    if (result != 0) {
+        mySerial.print("Error writing to I2C. Result=");
+        mySerial.println(result);
+        delay(2000);
+        return;
+    }
+    Wire.requestFrom(0x42, 2);
+    fpResponse = Wire.read();
+    fpResponse |= Wire.read() << 8;
+    // mySerial.print("Received from frontPanel: 0x");
+    // mySerial.println(fpResponse, HEX);
+
+    int MuxPin_GND        = 0b0000000000000000;
+    int MuxPin_ABSelect   = 0b0000000000000010;
+    int MuxPin_ParSelect  = 0b0000000000000100;
+    int MuxPin_SerSelect  = 0b0000000000001000;
+    int MuxPin_IndSelect  = 0b0000000001000000;
+    int MuxPin_LArrow     = 0b0000000010000000;
+    int MuxPin_RArrow     = 0b0000000100000000;
+    int MuxPin_ENC_CLK    = 0b0000100000000000;
+    int MuxPin_ENC_DT     = 0b0001000000000000;
+    int MuxPin_ENC_SWITCH = 0b0010000000000000;
+    int MuxPin_CHB_EN     = 0b0100000000000000;
+    int MuxPin_CHA_EN     = 0b1000000000000000;
+
+    const int buttonsToCheck[5] = {
+        MuxPin_IndSelect,
+        MuxPin_ParSelect,
+        MuxPin_SerSelect,
+        MuxPin_CHA_EN,
+        MuxPin_CHB_EN
+    };
+
+    // Flip the state according to the pressed buttons
+    uint16_t newButtonState = fpResponse;
+    if (newButtonState != buttonState) {
+        mySerial.print("New button state: ");
+        mySerial.println(newButtonState, HEX);
+
+        for (int i = 0; i < 5; ++i) {
+            if (!(buttonState & buttonsToCheck[i]) && (newButtonState & buttonsToCheck[i])) {
+                // Button 'i' was pressed
+                // Change state of led i
+                ledStatus = ledStatus ^ (1 << i);
+                mySerial.print("led ");
+                mySerial.print(i);
+                mySerial.print(" is now ");
+                mySerial.println((ledStatus & (1 << i))? "ON" : "OFF");
+            }
+        }
+        buttonState = newButtonState;
+        Wire.beginTransmission(0x42);
+        Wire.write(0x02);
+        Wire.write(ledStatus);
+        Wire.endTransmission();
+        Wire.requestFrom(0x42, 1);
+        Wire.read();
     }
 }
+
 void BoardControl::updateOutputInfo()
 {
     String msgLine;
     char tempMsgLine[20];
 
-   outSense.sample();
+//   outSense.sample();
 
     msgLine = "vA: " + String(outSense.readOutput(Output::VoltageA));
     msgLine.toCharArray(tempMsgLine, 20);
@@ -186,7 +214,7 @@ void BoardControl::updateOutputInfo()
     msgLine.toCharArray(tempMsgLine, 20);
     lcd.setCursor(10,2);
     lcd.print(tempMsgLine);
-    mySerial.println("Output info updated");
+//    mySerial.println("Output info updated");
 }
 
 
